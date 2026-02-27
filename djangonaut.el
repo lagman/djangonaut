@@ -520,7 +520,14 @@ ignore_patterns = ['CVS', '.*', '*~']
 
 for engine in engines.all():
     if isinstance(engine, DjangoTemplates):
-        for loader in engine.engine.template_loaders:
+        all_loaders = engine.engine.template_loaders
+        unwrapped_loaders = []
+        for loader in all_loaders:
+            if hasattr(loader, 'loaders'):
+                unwrapped_loaders.extend(loader.loaders)
+            else:
+                unwrapped_loaders.append(loader)
+        for loader in unwrapped_loaders:
             if isinstance(loader, (FileSystemLoader, AppDirectoriesLoader)):
                 try:
                     dirs = loader.get_dirs()
@@ -530,6 +537,7 @@ for engine in engines.all():
                     else:
                         dirs = loader.engine.dirs
                 for template_directory in dirs:
+                    template_directory = str(template_directory)
                     for root, _, files in walk(template_directory):
                         for template in files:
                             template_path = join(root, template)
